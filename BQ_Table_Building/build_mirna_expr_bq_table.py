@@ -31,11 +31,11 @@ from json import loads as json_loads
 from os.path import expanduser
 from createSchemaP3 import build_schema
 from common_etl.support import create_clean_target, build_file_list, generic_bq_harness, confirm_google_vm, \
-                               upload_to_bucket, csv_to_bq, concat_all_files, delete_table_bq_job, \
-                               build_pull_list_with_bq, update_schema, \
-                               update_description, build_combined_schema, get_the_bq_manifest, BucketPuller, \
-                               generate_table_detail_files, update_schema_with_dict, install_labels_and_desc, \
-                               publish_table
+            upload_to_bucket, csv_to_bq, concat_all_files, delete_table_bq_job, \
+            build_pull_list_with_bq, update_schema, \
+            update_description, build_combined_schema, get_the_bq_manifest, BucketPuller, \
+            generate_table_detail_files, update_schema_with_dict, install_labels_and_desc, \
+            publish_table
 
 '''
 ----------------------------------------------------------------------------------------------
@@ -110,7 +110,6 @@ def attach_barcodes_sql(temp_table, aliquot_table):
     # sample_is_ffpe and sample_preservation_method fields. Previous release tables did not have these
     # fields. Added DISTINCT to avoid row duplication here:
     #
-    #
     return '''
         SELECT DISTINCT
                a.project_short_name,
@@ -178,7 +177,6 @@ Main Control Flow
 Note that the actual steps run are configured in the YAML input! This allows you to
 e.g. skip previously run steps.
 '''
-
 def main(args):
 
     if not confirm_google_vm():

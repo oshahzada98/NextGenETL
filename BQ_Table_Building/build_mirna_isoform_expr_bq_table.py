@@ -29,7 +29,9 @@ from os.path import expanduser
 from createSchemaP3 import build_schema
 from common_etl.support import create_clean_target, build_file_list, generic_bq_harness, \
     upload_to_bucket, csv_to_bq, concat_all_files, delete_table_bq_job, build_pull_list_with_bq, update_schema, \
-    update_description, build_combined_schema, get_the_bq_manifest, BucketPuller, confirm_google_vm
+    update_description, build_combined_schema, get_the_bq_manifest, BucketPuller, confirm_google_vm, \
+    generate_table_detail_files, update_schema_with_dict, install_labels_and_desc, \
+    publish_table
 
 '''
 ----------------------------------------------------------------------------------------------
@@ -188,7 +190,10 @@ def attach_barcodes_sql(temp_table, aliquot_table):
                c.case_barcode,
                c.sample_barcode,
                c.aliquot_barcode, 
-               a.fileUUID
+               a.fileUUID,
+               c.case_gdc_id,
+               c.sample_gdc_id,
+               a.aliquot_gdc_id
         FROM `{0}`as a JOIN `{1}` AS c ON a.aliquot_gdc_id = c.aliquot_gdc_id
         WHERE c.case_gdc_id = a.case_gdc_id
         '''.format(temp_table, aliquot_table)
@@ -214,7 +219,14 @@ def final_join_sql(isoform_table, barcodes_table):
                a.case_barcode,
                a.sample_barcode,
                a.aliquot_barcode, 
-               b.*
+               b.miRNA_ID as miRNA_id,
+               b.read_count,
+               b.reads_per_million_miRNA_mapped,
+               b.cross_mapped,
+               b.fileUUID as file_gdc_id,
+               a.case_gdc_id,
+               a.sample_gdc_id,
+               a.aliquot_gdc_id
         FROM `{0}` as a JOIN `{1}` as b ON a.fileUUID = b.fileUUID
         '''.format(barcodes_table, isoform_table)
 
@@ -282,6 +294,13 @@ def main(args):
     hold_schema_list = "{}/{}".format(home, params['HOLD_SCHEMA_LIST'])
 
     #
+    # Best practice is to clear out the directory where the files are going. Don't want anything left over:
+    #
+
+    if 'clear_target_directory' in steps:
+        create_clean_target(local_files_dir)
+
+    #
     # Use the filter set to get a manifest from GDC using their API. Note that is a pull list is
     # provided, these steps can be omitted:
     #
@@ -297,12 +316,6 @@ def main(args):
             print("Failure generating manifest")
             return
 
-    #
-    # Best practice is to clear out the directory where the files are going. Don't want anything left over:
-    #
-    
-    if 'clear_target_directory' in steps:
-        create_clean_target(local_files_dir)
 
     #
     # We need to create a "pull list" of gs:// URLs to pull from GDC buckets. If you have already
@@ -416,13 +429,78 @@ def main(args):
                                        params['SKELETON_TABLE'])
         barcodes_table = '{}.{}.{}'.format(params['WORKING_PROJECT'], 
                                            params['TARGET_DATASET'], 
-                                           params['BARCODE_STEP_2_TABLE'])        
+                                           params['BARCODE_STEP_2_TABLE'])
         success = final_merge(skel_table, barcodes_table, 
                               params['TARGET_DATASET'], params['FINAL_TARGET_TABLE'], params['BQ_AS_BATCH'])
         if not success:
             print("Join job failed")
             return
-    
+
+    #
+    # Schemas and table descriptions are maintained in the github repo:
+    #
+
+    if 'pull_table_info_from_git' in steps:
+        print('pull_table_info_from_git')
+        try:
+            create_clean_target(params['SCHEMA_REPO_LOCAL'])
+            repo = Repo.clone_from(params['SCHEMA_REPO_URL'], params['SCHEMA_REPO_LOCAL'])
+            repo.git.checkout(params['SCHEMA_REPO_BRANCH'])
+        except Exception as ex:
+            print("pull_table_info_from_git failed: {}".format(str(ex)))
+            return
+
+    if 'process_git_schemas' in steps:
+        print('process_git_schema')
+        # Where do we dump the schema git repository?
+        schema_file = "{}/{}/{}".format(params['SCHEMA_REPO_LOCAL'], params['RAW_SCHEMA_DIR'], params['SCHEMA_FILE_NAME'])
+        full_file_prefix = "{}/{}".format(params['PROX_DESC_PREFIX'], params['FINAL_TARGET_TABLE'])
+        # Write out the details
+        success = generate_table_detail_files(schema_file, full_file_prefix)
+        if not success:
+            print("process_git_schemas failed")
+            return
+
+    if 'analyze_the_schema' in steps:
+        print('analyze_the_schema')
+        typing_tups = build_schema(one_big_tsv, params['SCHEMA_SAMPLE_SKIPS'])
+        full_file_prefix = "{}/{}".format(params['PROX_DESC_PREFIX'], params['FINAL_TARGET_TABLE'])
+        schema_dict_loc = "{}_schema.json".format(full_file_prefix)
+        build_combined_schema(None, schema_dict_loc,
+                                typing_tups, hold_schema_list, hold_schema_dict)
+
+    #
+    # Update the per-field descriptions:
+    #
+
+    if 'update_field_descriptions' in steps:
+        print('update_field_descriptions')
+        full_file_prefix = "{}/{}".format(params['PROX_DESC_PREFIX'], params['FINAL_TARGET_TABLE'])
+        schema_dict_loc = "{}_schema.json".format(full_file_prefix)
+        schema_dict = {}
+        with open(schema_dict_loc, mode='r') as schema_hold_dict:
+            full_schema_list = json_loads(schema_hold_dict.read())
+        for entry in full_schema_list:
+            schema_dict[entry['name']] = {'description': entry['description']}
+
+        success = update_schema_with_dict(params['TARGET_DATASET'], params['FINAL_TARGET_TABLE'], schema_dict)
+        if not success:
+            print("update_field_descriptions failed")
+            return
+
+    #
+    # Add description and labels to the target table:
+    #
+
+    if 'update_table_description' in steps:
+        print('update_table_description')
+        full_file_prefix = "{}/{}".format(params['PROX_DESC_PREFIX'], params['FINAL_TARGET_TABLE'])
+        success = install_labels_and_desc(params['TARGET_DATASET'], params['FINAL_TARGET_TABLE'], full_file_prefix)
+        if not success:
+            print("update_table_description failed")
+            return
+
+
     #
     # The derived table we generate has no field descriptions. Add them from the scraped page:
     #
@@ -432,7 +510,7 @@ def main(args):
         if not success:
             print("Schema update failed")
             return       
-    
+    ottoman
     #
     # Add the table description:
     #
