@@ -26,7 +26,7 @@ import yaml
 import io
 from json import loads as json_loads
 from os.path import expanduser
-from createSchemaP3 import build_schema
+#from createSchema import build_schema
 from common_etl.support import create_clean_target, build_file_list, generic_bq_harness, \
     upload_to_bucket, csv_to_bq, concat_all_files, delete_table_bq_job, build_pull_list_with_bq, update_schema, \
     update_description, build_combined_schema, get_the_bq_manifest, BucketPuller, confirm_google_vm, \
@@ -509,8 +509,7 @@ def main(args):
         success = update_schema(params['TARGET_DATASET'], params['FINAL_TARGET_TABLE'], hold_schema_dict)
         if not success:
             print("Schema update failed")
-            return       
-    ottoman
+            return
     #
     # Add the table description:
     #
