@@ -952,7 +952,7 @@ def get_excluded_for_grp(api_params, field_grp, is_webapp=False):
     if not api_params['FIELD_CONFIG'][field_grp]:
         has_fatal_error("api_params['FIELD_CONFIG']['{}'] not found".format(field_grp), KeyError)
 
-    excluded_key = 'webapp_excluded_fields' if is_webapp else 'excluded_fields'
+    excluded_key = 'app_excluded_fields' if is_webapp else 'excluded_fields'
 
     if excluded_key not in api_params['FIELD_CONFIG'][field_grp]:
         has_fatal_error("{}'s excluded_fields not found.".format(field_grp))
@@ -975,7 +975,7 @@ def get_excluded_fields(api_params, field_grps, is_webapp=False):
         has_fatal_error('FIELD_CONFIG not in api_params, or is empty', KeyError)
 
     exclude_fields = set()
-    excluded_key = 'webapp_excluded_fields' if is_webapp else 'excluded_fields'
+    excluded_key = 'app_excluded_fields' if is_webapp else 'excluded_fields'
 
     for field_grp in field_grps:
         if field_grp not in api_params['FIELD_CONFIG']:
