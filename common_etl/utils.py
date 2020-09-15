@@ -1050,12 +1050,12 @@ def get_base_grp(api_params):
     """
     if 'FG_CONFIG' not in api_params:
         has_fatal_error("FG_CONFIG not set (in api_params) in YAML.", KeyError)
-    if 'base_field_grp' not in api_params['FG_CONFIG'] \
-            or not api_params['FG_CONFIG']['base_field_grp']:
+    if 'base_fg' not in api_params['FG_CONFIG'] \
+            or not api_params['FG_CONFIG']['base_fg']:
         has_fatal_error("base_field_grp not set (in api_params['FG_CONFIG']) in YAML.",
                         KeyError)
 
-    return api_params['FG_CONFIG']['base_field_grp']
+    return api_params['FG_CONFIG']['base_fg']
 
 
 def get_expand_groups(api_params):
@@ -1217,7 +1217,7 @@ def get_tables(api_params, record_counts):
         if record_counts[table] > 1:
             table_keys.add(table)
 
-    table_keys.add(api_params['FG_CONFIG']['base_field_grp'])
+    table_keys.add(api_params['FG_CONFIG']['base_fg'])
 
     return table_keys
 
