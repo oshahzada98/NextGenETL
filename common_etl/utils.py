@@ -769,10 +769,10 @@ def get_fields_to_idx_last(api_params):
     :return: fields to include at the end of the table
     """
     if 'FG_CONFIG' not in api_params or \
-            'fields_to_idx_last' not in api_params['FG_CONFIG']:
+            'last_keys_in_table' not in api_params['FG_CONFIG']:
         has_fatal_error("Missing FG_CONFIG in YAML", KeyError)
 
-    return api_params['FG_CONFIG']['fields_to_idx_last']
+    return api_params['FG_CONFIG']['last_keys_in_table']
 
 
 def get_column_order_list(api_params, field_grp):
