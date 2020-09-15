@@ -1052,17 +1052,6 @@ def create_tables(program, cases, is_webapp=False):
 
 
 def main(args):
-    table_id_1 = "isb-cgc-bq.CGCI_versioned.clinical_follow_ups_molecular_tests_gdc_r24"
-    table_id_2 = "isb-cgc-bq.CGCI.clinical_follow_ups_molecular_tests_gdc_current"
-    friendly_name_1 = "CGCI CLINICAL DATA - FOLLOW UP MOLECULAR TESTS REL24 VERSIONED"
-    friendly_name_2 = "CGCI CLINICAL DATA - FOLLOW UP MOLECULAR TESTS"
-    modify_friendly_name_custom(table_id_1, friendly_name_1)
-    time.sleep(2)
-    modify_friendly_name_custom(table_id_2, friendly_name_2)
-    time.sleep(2)
-    exit()
-
-
     """
     Script execution function.
     :param args: command-line arguments
