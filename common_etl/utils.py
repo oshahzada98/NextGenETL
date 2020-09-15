@@ -553,7 +553,7 @@ def modify_friendly_name(bq_params, table_id):
     table = get_bq_table(table_id)
 
     friendly_name = table.friendly_name
-    friendly_name += ' REL' + bq_params['GDC_RELEASE'] + ' VERSIONED'
+    friendly_name += ' REL' + bq_params['RELEASE'] + ' VERSIONED'
 
     table.friendly_name = friendly_name
 
@@ -1016,7 +1016,7 @@ def get_gdc_rel(bq_params):
     :param bq_params: bq params from yaml config file
     :return: GDC release abbreviation (usually rXX or relXX)
     """
-    return bq_params['REL_PREFIX'] + bq_params['GDC_RELEASE']
+    return bq_params['REL_PREFIX'] + bq_params['RELEASE']
 
 
 def get_working_table_id(bq_params, table_name=None):
