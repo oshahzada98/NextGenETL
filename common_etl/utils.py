@@ -1004,10 +1004,10 @@ def get_app_excluded_field_grps(api_params):
     """
     if 'FG_CONFIG' not in api_params or not api_params['FG_CONFIG']:
         has_fatal_error('FG_CONFIG not in api_params, or is empty', KeyError)
-    if 'app_excluded_field_grps' not in api_params['FG_CONFIG']:
+    if 'excluded_fgs' not in api_params['FG_CONFIG']:
         has_fatal_error('app_excluded_field_grps not found in not in FG_CONFIG', KeyError)
 
-    return api_params['FG_CONFIG']['app_excluded_field_grps']
+    return api_params['FG_CONFIG']['excluded_fgs']
 
 
 def get_gdc_rel(bq_params):
